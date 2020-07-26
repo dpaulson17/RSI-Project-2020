@@ -53,29 +53,26 @@ GSE145281 <- readRDS("Desktop/seurat (1).RDS")
 sco <- GSE145281
 ```
 
+```{r}
+sco.adjusted <- subset(sco, idents = c(15, 16), invert = TRUE)
+```
+
 # UMAP with annotated clusters
 
 ```{r}
-annotations <- readRDS("Desktop/cell.annotations (1).RDS")
-annotations
+my.annot = c("Naive CD4+ T", "CD36+ Monocytes", "CXCR4+ NK", "CD68- Monocytes", "CD8A T", "CD14- INFG- Monocytes", "B cells", "CXCR4- NK", "Non classical monocytes", "Monocytes", "RUNX3+ NK", "Myeloid DC", "Low-density basophils", "Effector Memory T", "Th1")
 ```
 
 ```{r}
-table(annotations$HumanPrimaryCellAtlasData.main)
+DimPlot(sco.adjusted, reduction = "umap", label = TRUE)
 ```
 
-```{r}
-table(sco@active.ident)
-```
 
 ```{r}
-DimPlot(sco, reduction = "umap", label = TRUE)
-```
-```{r}
-new.cluster.ids <- c("Monocyte", "T_cells", "NK_cell", "B_cell", "Pre-B_cell_CD34-", "BM", "Neutrophils", "Erythroblast", "Platelets", "Pro-B_cell_CD34+", "HSC_-G-CSF", "CMP", "GMP", "DC", "BM & Prog.", "Macrophage", "MEP")
-names(new.cluster.ids) <- levels(sco)
-sco <- RenameIdents(sco, new.cluster.ids)
-DimPlot(sco, reduction = "umap", label = TRUE, pt.size = 1) + NoLegend()
+new.cluster.ids <- c("Naive CD4+ T", "CD36+ Monocytes", "CXCR4+ NK", "CD68- Monocytes", "CD8A T", "CD14- INFG- Monocytes", "B cells", "CXCR4- NK", "Non classical monocytes", "Monocytes", "RUNX3+ NK", "Myeloid DC", "Low-density basophils", "Effector Memory T", "Th1")
+names(new.cluster.ids) <- levels(sco.adjusted)
+sco.adjusted <- RenameIdents(sco.adjusted, new.cluster.ids)
+DimPlot(sco.adjusted, reduction = "umap", label = TRUE, pt.size = 1) + NoLegend()
 ```
 
 # K-means clustering tree
@@ -139,42 +136,34 @@ create.cluster.tree <- function(sco) {
 ```
 
 ```{r}
-clust.mat = create.cluster.tree(sco)
+clust.mat = create.cluster.tree(sco.adjusted)
 clust.mat
 ```
-
 
 ```{r}
 save(clust.mat, file = "mat.RData")
 ```
 
-
 ## Visualize with dendrogram
 
 ```{r}
-df.mat <- as.data.frame((clust.mat), row.names = c('clust13', 'clust11', 'clust1', 'clust0', 'clust8', 'clust15', 'clust9', 'clust5', 'clust2', 'clust3', 'clust7', 'clust6', 'clust14', 'clust10', 'clust4', 'clust12', 'clust16'))
+df.mat <- as.data.frame((clust.mat), row.names = c('clust13', 'clust11', 'clust1', 'clust0', 'clust8', 'clust9', 'clust5', 'clust2', 'clust3', 'clust7', 'clust6', 'clust14', 'clust10', 'clust4', 'clust12'))
 df.mat
 ```
-```{r}
-d <- dist(df.mat, method = "euclidean")
-hc <- hclust(d, method = "complete")
-plot(hc, cex = 0.6, hang = -1)
-```
 
 ```{r}
-df.mat.annotated <- as.data.frame((clust.mat), row.names = c('DC', 'CMP', 'T_cells', 'Monocyte', 'Platelets', 'Macrophage', 'Pro-B_cell_CD34+', 'BM', 'NK_cell', 'B_cell', 'Erythroblast', 'Neutrophils', 'BM & Prog.', 'HSC_-G-CSF', 'Pre-B_cell_CD34-', 'GMP', 'MEP'))
+df.mat.annotated <- as.data.frame((clust.mat), row.names = c('Effector Memory T', 'Myeloid DC', 'CD36+ Monocytes', 'Naive CD4+ T', 'Non classical monocytes', 'Monocytes', 'CD14- INFG- Monocytes', 'CXCR4+ NK', 'CD68- Monocytes', 'CXCR4- NK', 'B cells', 'Th1', 'RUNX3+ NK', 'CD8A T', 'Low-density basophils'))
 df.mat.annotated
 ```
-
 ```{r}
-d2 <- dist(df.mat.annotated, method = "euclidean")
-hc2 <- hclust(d2, method = "complete")
-plot(hc2, cex = 0.6, hang = -1)
+d <- dist(df.mat.annotated, method = "euclidean")
+hc <- hclust(d, method = "complete")
+plot(hc, cex = 0.6, hang = -1)
 ```
 # Hierarchical clustering pseudobulk analysis
 
 ```{r}
-cluster.averages <- AverageExpression(sco)
+cluster.averages <- AverageExpression(sco.adjusted)
 cluster.averages
 ```
 
@@ -187,20 +176,15 @@ df.pseudo
 df.pseudo <- data.frame(t(df.pseudo))
 df.pseudo
 ```
-
-```{r}
-rownames(df.pseudo) = c('Monocyte', 'T_cells', 'NK_cell', 'B_cell', 'Pre-B_cell_CD34-', 'BM', 'Neutrophils', 'Erythroblast', 'Platelets', 'Pro-B_cell_CD34+', 'HSC_-G-CSF', 'CMP', 'GMP', 'DC', 'BM & Prog.', 'Macrophage', 'MEP')
-df.pseudo
-```
 ```{r}
 # Dissimilarity matrix
-d3 <- dist(df.pseudo, method = "euclidean")
+d2 <- dist(df.pseudo, method = "euclidean")
 
 # Hierarchical clustering using Complete Linkage
-hc3 <- hclust(d3, method = "complete" )
+hc2 <- hclust(d2, method = "complete" )
 
 # Plot the obtained dendrogram
-plot(hc3, cex = 0.6, hang = -1)
+plot(hc2, cex = 0.6, hang = -1)
 ```
 
 # Tree differential expression analysis
@@ -242,7 +226,6 @@ DESeq2DETest <- function(
 }
 ```
 
-
 ```{r}
 mydeg <- function(sco.curr) {
     require(Matrix)
@@ -277,11 +260,11 @@ mydeg <- function(sco.curr) {
 ## Identify enriched genes
 
 ```{r message = FALSE}
-sco$binaryResponse =sco$response
+sco.adjusted$binaryResponse =sco.adjusted$response
 
 # sco.sub = GSE145281[, GSE145281$seurat_clusters %in% c(10,11)]
 responders.enrichment = nonresponders.enrichment = list()
-seurat.clusters= unique(sco$seurat_clusters) %>% as.character
+seurat.clusters= unique(sco.adjusted$seurat_clusters) %>% as.character
 for (ii in seq(ncol(clust.mat) -1)) {
     clust.mat.old = clust.mat[, ii] 
     clust.mat.new = clust.mat[, ii+1] 
@@ -297,7 +280,7 @@ for (ii in seq(ncol(clust.mat) -1)) {
     
     seurat.clust.old = seurat.clusters[clust.mat.old == oldk] %>% as.character
     inx = which(seurat.clusters == oldk)
-    sco.sub = sco[,sco$seurat_clusters %in% seurat.clust.old]%>%
+    sco.sub = sco.adjusted[,sco.adjusted$seurat_clusters %in% seurat.clust.old]%>%
      FindVariableFeatures(selection.method = "vst", nfeatures = 2000)
     
     ## Perform differential expression
@@ -333,10 +316,11 @@ nonresponders.enrichment
 ```
 
 ```{r}
-x <- c("IL32", "NKG7", "ZFP36L2", "JUN", "GNLY", "CD3E", "IFITM1", "PTPRCAP", "DUSP2", "FOS", "PSME2", "VAMP5", "PPP1CA", "MIR7703", "PSMB10", "PFN1", "ARPC2", "ACTB", "GSTP1", "CYBA", "C12orf75", "DUSP1", "RNVU1-19", "FYB", "JUNB", "LGALS2")
+x <- c("IL32", "ZFP36L2", "JUN", "CD3E", "GNLY", "IFITM1", "DUSP2", "PTPRCAP", "KLRB1", "DUSP1", "FOS", "PSME2", "VAMP5", "PPP1CA", "MIR7703", "PSMB10", "PFN1", "RGS2", "SELL", "FKBP1A", "GSTP1", "PRF1", "CYBA", "C12orf75", "ARPC2", "ACTB", "ITGB2", "TXNIP", "NKG7")
 df.genes.responders <- data.frame("geneID" = x)
 df.genes.responders
 ```
+
 ```{r}
 ids.responders <- bitr( df.genes.responders$geneID, "SYMBOL", "ENTREZID", "org.Hs.eg.db" )
 ids.responders
@@ -348,15 +332,17 @@ kk.responders <- enrichKEGG( gene     = ids.responders$ENTREZID,
                   organism = 'hsa' )
 data.frame( kk.responders )
 ```
+
 ```{r}
-plot_grid(dotplot(kk.responders, showCategory=27))
+plot_grid(dotplot(kk.responders, showCategory=28))
 ```
 
 ```{r}
 heatplot(setReadable(kk.responders, 'org.Hs.eg.db', 'ENTREZID'))
 ```
+
 ```{r}
-x <- c("SLC25A37", "BRSK1", "ALAS2", "SNCA", "MPP1", "GMPR", "HBA1", "AHSP", "DMTN", "HBZ", "HBA2", "HBM", "SELENBP1", "CA1", "HBB", "YBX3", "YBX3P1", "BCL2L1", "IFNGR2", "RAB31", "TREM1", "EREG", "JARID2", "MAFB", "FAM49A", "MAP3K8", "AGFG1", "RUNX1", "RABGEF1", "BCL2A1", "H1FX", "MARCKS", "SLC43A2", "GLUL", "CXCL16", "INSIG1", "SAT1", "RNU5F-1", "SERPINB2", "MARCKSL1", "GPX1", "IRF2BP2", "PLAUR", "CARD16", "TIMP1", "BID", "RIPK2", "C5AR1", "LMNA", "CLEC7A", "GAPDH", "ZNF385A", "IER3", "RNF144B", "CDA", "LINC00936", "CD83", "ZFP36L1", "LINC01272", "FTL", "SRGN", "LGALS1", "FTH1P3", "CXCL8", "HOTAIRM1", "NAMPT", "CTSD", "IRF8", "NA.65", "RPL29", "ARID5B", "RPS26", "VIM", "FLJ44635", "RPS10", "FTH1", "RPS10-NUDT3", "CCL3", "CCL4", "ATP2B1", "TPM4", "TAGLN2", "FTH1", "GPAT3", "SERPINB9", "HSPA5", "TNFRSF21", "ADAM28")
+x <- c("IFNGR2", "RAB31", "JARID2","TREM1", "EREG", "SLC25A37", "MAP3K8", "MAFB", "FAM49A", "AGFG1", "RUNX1", "RABGEF1", "H1FX", "BCL2A1", "MARCKS", "SLC43A2", "GLUL", "CXCL16", "INSIG1", "SERPINB2", "RNU5F-1", "GPX1", "PLAUR", "IRF2BP2", "SAT1", "MARCKSL1", "CARD16", "BID", "LMNA", "CLEC7A", "C5AR1", "RIPK2", "IER3", "RNF144B", "ZNF385A", "GAPDH", "CDA", "CD83", "LINC00936", "ZFP36L1", "LINC01272", "CXCL8", "HOTAIRM1", "YBX3", "LGALS1", "SRGN", "NAMPT", "FTH1P3", "B4GALT1", "CTSD", "RPS26", "RPS10", "RPS10-NUDT3", "CCL3", "CCL4", "ATP2B1", "TIMP1", "TPM4", "TAGLN2", "ISG20", "ARID5B")
 df.genes.nonresponders <- data.frame("geneID" = x)
 df.genes.nonresponders
 ```
